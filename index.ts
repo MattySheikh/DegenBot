@@ -3,6 +3,16 @@ import { Client, Collection, Events, GatewayIntentBits, REST, Routes, messageLin
 import { readdir } from 'fs/promises';
 import { join as pathJoin } from 'path';
 
+declare global {
+	namespace NodeJS {
+		interface ProcessEnv {
+			DEGEN_BOT_TOKEN: string;
+			DEGEN_BOT_GUILD_ID: string;
+			DEGEN_BOT_CLIENT_ID: string;
+		}
+	}
+}
+
 interface DiscordClient extends Client {
 	commands?: Collection<string, any>;
 }
@@ -13,18 +23,12 @@ interface CommandsResponse {
 	description: string;
 }
 
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      DEGEN_BOT_TOKEN: string;
-      DEGEN_BOT_GUILD_ID: string;
-      DEGEN_BOT_CLIENT_ID: string;
-    }
-  }
+interface Command {
+	name: string;
+	description: string;
 }
 
-const login = async () => {
-	// Create a new client instance
+const start = async () => {
 	const client: DiscordClient = new Client({
 		intents: [
 			GatewayIntentBits.DirectMessages,
@@ -34,38 +38,12 @@ const login = async () => {
 		]
 	});
 
-	// When the client is ready, run this code (only once).
-	// The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
-	// It makes some properties non-nullable.
+	await registerCommands(client);
+
 	client.once(Events.ClientReady, (readyClient: any) => {
 		console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 	});
 
-	client.on(Events.InteractionCreate, async (interaction: any) => {
-		if (!interaction.isChatInputCommand()) return;
-
-		const command = interaction.client.commands.get(interaction.commandName);
-
-		if (!command) {
-			console.error(`No command matching ${interaction.commandName} was found.`);
-			return;
-		}
-
-		try {
-			await command.execute(interaction);
-		} catch (error) {
-			console.error(error);
-			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-			} else {
-				await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-			}
-		}
-	});
-
-	await registerCommands(client);
-
-	// Log in to Discord with your client's token
 	client.login(process.env.DEGEN_BOT_TOKEN);
 }
 
@@ -75,43 +53,34 @@ const registerCommands = async (client: DiscordClient) => {
 	const commandsPath = pathJoin(__dirname, 'commands');
 	const commandFiles = await readdir(commandsPath);
 
-	const commands = [];
+	const commandHandler: Record<string, any> = {};
 	for (const commandFile of commandFiles) {
+		const [command] = commandFile.split('.ts');
 		const commandFilePath = pathJoin(commandsPath, commandFile);
-		const command = require(commandFilePath);
-		if (command.data && command.execute) {
-			console.log('Registered', command.data.name);
-			client.commands.set(command.data.name, command);
-			commands.push(command.data.toJSON());
+		const { execute } = require(commandFilePath);
+		if (execute) {
+			console.log('Registered', command);
+			commandHandler[command] = execute;
 		} else {
-			console.log(`[WARNING] The command at ${commandFilePath} is missing a required "data" or "execute" property.`);
+			console.log(`[WARNING] The command at ${commandFilePath} is missing a required "execute" export.`);
 		}
 	}
 
-	await deployCommands(commands);
-};
+	client.on(Events.MessageCreate, async (message) => {
+		const { content } = message;
+		if (!content.startsWith('!')) {
+			return;
+		}
 
-const deployCommands = async (commands: string[]) => {
-	const rest = new REST().setToken(process.env.DEGEN_BOT_TOKEN || '');
-	console.log(`Started refreshing ${commands.length} application (/) commands.`);
+		const [command, params] = content.split('!')[1].split(' ');
 
-		// The put method is used to fully refresh all commands in the guild with the current set
-	const data = await rest.put(
-		Routes.applicationGuildCommands(process.env.DEGEN_BOT_CLIENT_ID, process.env.DEGEN_BOT_GUILD_ID),
-		{ body: commands },
-	) as CommandsResponse[];
-
-	console.log(`Successfully reloaded ${data.length} application (/) commands.`);
-}
-
-
-const init = async () => {
-	await login();
+		commandHandler[command](params, message);
+	})
 };
 
 (async () => {
 	try {
-		await init();
+		await start();
 	} catch (e) {
 		console.error('Error during init', e);
 	}

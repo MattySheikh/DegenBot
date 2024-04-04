@@ -1,13 +1,6 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { Message} from 'discord.js';
 
-const data = new SlashCommandBuilder().setName('swi').setDescription('Broadcasts a Shop With Inventory');
-
-const execute = async (interaction: any) => {
-	console.log('-------', interaction);
-	interaction.reply('https://www.neopets.com/objects.phtml?obj_type=2&type=shop');
-}
-
-export {
-	data,
-	execute,
+export const execute = async (params: string, message: Message) => {
+	const { channel } = message;
+	channel.send(`https://www.neopets.com/objects.phtml?obj_type=${params}&type=shop`);
 }

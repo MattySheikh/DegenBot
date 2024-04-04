@@ -1,12 +1,6 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { Message} from 'discord.js';
 
-const data = new SlashCommandBuilder().setName('sc').setDescription('Broadcasts a Shop Clear');
-
-const execute = async (interaction: any) => {
-	interaction.reply('CLEAR');
-}
-
-export {
-	data,
-	execute,
+export const execute = async (params: string, message: Message) => {
+	const { channel } = message;
+	channel.send('CLEAR');
 }
