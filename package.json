@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "watch": "ts-node-dev index.ts"
+    "watch": "nodemon index.ts"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",

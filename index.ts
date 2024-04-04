@@ -1,5 +1,4 @@
-// Require the necessary discord.js classes
-import { Client, Collection, Events, GatewayIntentBits, REST, Routes, messageLink } from 'discord.js';
+import { Client, Message, Events, GatewayIntentBits } from 'discord.js';
 import { readdir } from 'fs/promises';
 import { join as pathJoin } from 'path';
 
@@ -13,23 +12,10 @@ declare global {
 	}
 }
 
-interface DiscordClient extends Client {
-	commands?: Collection<string, any>;
-}
-
-interface CommandsResponse {
-	id: string;
-	name: string;
-	description: string;
-}
-
-interface Command {
-	name: string;
-	description: string;
-}
+type MessageHandler = (params: string, message: Message) => Promise<void>;
 
 const start = async () => {
-	const client: DiscordClient = new Client({
+	const client: Client = new Client({
 		intents: [
 			GatewayIntentBits.DirectMessages,
 			GatewayIntentBits.Guilds,
@@ -40,20 +26,18 @@ const start = async () => {
 
 	await registerCommands(client);
 
-	client.once(Events.ClientReady, (readyClient: any) => {
+	client.once(Events.ClientReady, (readyClient) => {
 		console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 	});
 
 	client.login(process.env.DEGEN_BOT_TOKEN);
 }
 
-const registerCommands = async (client: DiscordClient) => {
-	client.commands = new Collection();
-
+const registerCommands = async (client: Client) => {
 	const commandsPath = pathJoin(__dirname, 'commands');
 	const commandFiles = await readdir(commandsPath);
 
-	const commandHandler: Record<string, any> = {};
+	const commandHandler: Record<string, MessageHandler> = {};
 	for (const commandFile of commandFiles) {
 		const [command] = commandFile.split('.ts');
 		const commandFilePath = pathJoin(commandsPath, commandFile);
@@ -75,7 +59,7 @@ const registerCommands = async (client: DiscordClient) => {
 		const [command, params] = content.split('!')[1].split(' ');
 
 		commandHandler[command](params, message);
-	})
+	});
 };
 
 (async () => {
