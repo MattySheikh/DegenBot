@@ -1,0 +1,22 @@
+{
+  "enginer": {
+    "node": ">=20.6.0"
+  },
+  "name": "degenbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Matthew Al-Sheikh <matthewalsheikh@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "watch": "ts-node-dev index.ts"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  }
+}
