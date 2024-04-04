@@ -58,6 +58,10 @@ const registerCommands = async (client: Client) => {
 
 		const [command, params] = content.split('!')[1].split(' ');
 
+		if (!commandHandler[command]) {
+			return;
+		}
+
 		commandHandler[command](params, message);
 	});
 };
