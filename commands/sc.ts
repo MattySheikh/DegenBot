@@ -8,8 +8,8 @@ export const execute = async (params: string, message: Message) => {
 		const msg = await channel.send(`Last clear: ${time}`);
 		const currentPinned = await channel.messages.fetchPinned();
 		for (const [, curr] of [...currentPinned]) {
-			const { content } = curr;
-			if (content.startsWith('Last clear: ') || content.startsWith('SWI: ')) {
+			const { content, author: { bot, username } } = curr;
+			if (bot && username === 'DegenBot' && (content.startsWith('Last clear: ') || content.startsWith('SWI: '))) {
 				curr.unpin();
 			}
 		}

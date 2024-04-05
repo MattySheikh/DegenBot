@@ -9,8 +9,8 @@ export const execute = async (params: string, message: Message) => {
 
 		let notPinnedYet = true;
 		for (const [, curr] of [...currentPinned]) {
-			const { content } = curr;
-			if (content.startsWith('SWI: ')) {
+			const { content, author: { bot, username } } = curr;
+			if (bot && username === 'DegenBot' && content.startsWith('SWI: ')) {
 				const currObj = (content.match('type=(.*)&type') || [])[1];
 				if (currObj === params) {
 					notPinnedYet = false;
